@@ -369,28 +369,8 @@ int main(int argc,char**argv)
     Fscb();
     fOutputInfo();
 
-    int ns=0;
-
     for(n=0;;n++)
     {
-        if(n<ns)
-        {
-            Fscb();
-            Fsc();
-            Collisionb();
-            Collision();
-            Infosendrecvf();
-            Boundary();
-            Infosendrecvf();
-            Streaming();
-            Macro();
-            Infosendrecvmacro();
-            Phisolid();
-            Infosendrecvmacro();
-        }
-
-        if(n>=ns)
-        {
             Fscb();
             Fsc();
             Collisionb();
@@ -415,7 +395,6 @@ int main(int argc,char**argv)
                 Infosendrecvparsolid();
                 Parsolidupdate();
             }
-        }
         
 
         if(n%1000==0)
@@ -426,9 +405,9 @@ int main(int argc,char**argv)
         if(n%10000==0) 
         {
             Outputpar(n);
-            //fOutputVTK3D();
+            fOutputVTK3D();
         }
-        if(n>600000) break;
+        if(n>1000000) break;
         if(isnan(error)) break;
         parctotal=0.0;
         for(pp=0;pp<NP;pp++)
@@ -507,8 +486,8 @@ void Parameter()
     vofl=1.0;
     vofg=0.0;
     vofc=0.5;
-    vofw=6.0;
-    sigma=0.1;
+    vofw=5.0;
+    sigma=0.001;
 
     betavof=12.0*sigma/vofw;
     kappa=3.0*sigma*vofw/2.0;
@@ -523,7 +502,7 @@ void Parameter()
     maddtotal=0.0;
     ntotal=NX*NY*NZ;
 
-    niuA=0.01;
+    niuA=0.1;
     xiA=0.5;
     sA[0]=1.0;
 	sA[1]=1.0;
@@ -1114,10 +1093,8 @@ void Fscb()
                     fscBy[i][j][k]=(1.0-tanh(2.0*phi/vofw)*tanh(2.0*phi/vofw))*dvofy[i][j][k]/ndvof/vofw/3.0;
                     fscBz[i][j][k]=(1.0-tanh(2.0*phi/vofw)*tanh(2.0*phi/vofw))*dvofz[i][j][k]/ndvof/vofw/3.0;
 
-                    if(vof[i][j][k]>0.1&&vof[i][j][k]<0.9) 
-                    {
-                        msource[i][j][k]=msource[i][j][k]-0.0001*ndvof;
-                    }
+                    msource[i][j][k]=msource[i][j][k]-0.0001*ndvof;
+
                     sscB[i][j][k][0]=0.0+msource[i][j][k];
                     sscB[i][j][k][1]=fscBx[i][j][k]+(vof[i][j][k]*ux[i][j][k]-vof0[i][j][k]*ux0[i][j][k]);
                     sscB[i][j][k][2]=fscBy[i][j][k]+(vof[i][j][k]*uy[i][j][k]-vof0[i][j][k]*uy0[i][j][k]);
@@ -1434,46 +1411,6 @@ void Macro()
                     uz[i][j][k]=(3.0*uz[i][j][k]+fscAz[i][j][k]/2.0)/rho[i][j][k];
                     p[i][j][k]=p[i][j][k]+0.5/3.0*(rhol-rhog)/(vofl-vofg)*(ux[i][j][k]*dvofx[i][j][k]+uy[i][j][k]*dvofy[i][j][k]+uz[i][j][k]*dvofz[i][j][k]);
                 }
-
-                if(isnan(ux[i][j][k]))
-                {
-                    ux[i][j][k]=0.0;
-                }
-
-                if(isnan(uy[i][j][k]))
-                {
-                    uy[i][j][k]=0.0;
-                }
-
-                if(isnan(uz[i][j][k]))
-                {
-                    uz[i][j][k]=0.0;
-                }
-
-                if(isnan(vof[i][j][k]))
-                {
-                    vof[i][j][k]=vofl;
-                    rho[i][j][k]=rhol;
-                    p[i][j][k]=0.0;
-                    for(l=0;l<Q;l++)
-                    {
-                    fA[i][j][k][l]=feq(l,rho[i][j][k],p[i][j][k],ux[i][j][k],uy[i][j][k],uz[i][j][k]);
-                    fB[i][j][k][l]=fbeq(l,vof[i][j][k],ux[i][j][k],uy[i][j][k],uz[i][j][k]);
-                    }
-                }
-
-                if(isnan(p[i][j][k]))
-                {
-                    vof[i][j][k]=vofl;
-                    rho[i][j][k]=rhol;
-                    p[i][j][k]=0.0;
-                    for(l=0;l<Q;l++)
-                    {
-                    fA[i][j][k][l]=feq(l,rho[i][j][k],p[i][j][k],ux[i][j][k],uy[i][j][k],uz[i][j][k]);
-                    fB[i][j][k][l]=fbeq(l,vof[i][j][k],ux[i][j][k],uy[i][j][k],uz[i][j][k]);
-                    }
-                }
-
             }
 
                 
@@ -2804,10 +2741,6 @@ void Eulerian()
                         paruwx[pp][i][j][k]=parux[pp]+VCross( parwx[pp], parwy[pp], parwz[pp], dx, dy, dz,0);
                         paruwy[pp][i][j][k]=paruy[pp]+VCross( parwx[pp], parwy[pp], parwz[pp], dx, dy, dz,1);
                         paruwz[pp][i][j][k]=paruz[pp]+VCross( parwx[pp], parwy[pp], parwz[pp], dx, dy, dz,2);
-
-                        /*paruwx[pp][i][j][k]=parux[pp];
-                        paruwy[pp][i][j][k]=paruy[pp];
-                        paruwz[pp][i][j][k]=paruz[pp];*/
                     }
                 }
 
